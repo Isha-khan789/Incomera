@@ -1,0 +1,122 @@
+/*
+ * Tailwind entry point.
+ *
+ * Two things here are deliberate and worth not undoing:
+ *
+ * 1. Preflight is NOT imported. Tailwind's base reset would flatten the
+ *    original design (headings, lists, buttons, form controls all get reset),
+ *    and 4,600 lines of legacy CSS assume browser defaults. Once every section
+ *    has been migrated, swap all of this for a plain `@import "tailwindcss";`.
+ *
+ * 2. The legacy stylesheet is pulled into its own cascade layer. Unlayered CSS
+ *    beats layered CSS no matter the source order, so without this the old
+ *    rules would win over every Tailwind utility. With `legacy` declared before
+ *    `utilities`, utilities take precedence — which is what you want while
+ *    migrating section by section.
+ */
+
+@layer theme, legacy, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "./styles.css" layer(legacy);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* Only scan source we actually author — public/legacy/*.js is 6,400 lines of
+   string literals and would generate a lot of junk candidates. */
+@source "../**/*.jsx";
+@source "../../index.html";
+
+/*
+ * The behaviour scripts drive the whole UI by toggling state classes —
+ * classList.add("on"), .add("open"), .add("bad") and so on, about 250 times
+ * across the 21 files. Declaring them as variants is what makes it possible to
+ * migrate a section to utilities without also rewriting its script: write
+ * `opacity-0 on:opacity-100` and the existing toggle still drives it.
+ *
+ * For a state on a *parent* that styles children, use the group pattern
+ * instead: `group` on the parent, `group-[.on]:text-in` on the child.
+ */
+@custom-variant on (&.on);
+@custom-variant open (&.open);
+@custom-variant bad (&.bad);
+@custom-variant done (&.done);
+@custom-variant sel (&.sel);
+@custom-variant live (&.live);
+@custom-variant sync (&.sync);
+@custom-variant hot (&.hot);
+@custom-variant shown (&.show);
+@custom-variant ready (&.ready);
+@custom-variant filled (&.filled);
+@custom-variant in-view (&.in);
+
+@theme {
+  /* the palette from :root in the original stylesheet, as Tailwind colours:
+     text-ink, bg-blue-deep, border-line-2, and so on */
+  --color-bg: #fcfdff;
+  --color-paper: #ffffff;
+  --color-ink: #0e2350;
+  --color-ink-2: #44506b;
+  --color-muted: #7c879b;
+  --color-line: #e5e9f2;
+  --color-line-2: #d6dcea;
+  --color-line-soft: #eff2f9;
+  --color-blue: #2456e6;
+  --color-blue-deep: #1a3fb0;
+  --color-blue-bright: #3b6bf5;
+  --color-in: #15c5de;
+  --color-in-deep: #0a7e92;
+  --color-good: #1fa971;
+  --color-rev: #ff3d5a;
+
+  /* footer palette */
+  --color-navy: #0a1734;
+  --color-navy-2: #101f46;
+  --color-navy-3: #152a63;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Consolas", "Menlo",
+    monospace;
+
+  /* the page's own container width and gutter, so `max-w-page px-gutter`
+     reproduces the legacy .wrap */
+  --container-page: 1200px;
+  --spacing-gutter: clamp(20px, 5vw, 60px);
+
+  /* the original layout breakpoint was 820px, which is not a Tailwind default */
+  --breakpoint-page: 821px;
+
+  --animate-fpulse: fpulse 2.6s ease-in-out infinite;
+  @keyframes fpulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+}
+
+@theme {
+  --animate-stpbeat: stpbeat 1.3s ease-in-out infinite;
+  @keyframes stpbeat {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.28;
+    }
+  }
+
+  --animate-stkmarq: stkmarq 58s linear infinite;
+  @keyframes stkmarq {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
