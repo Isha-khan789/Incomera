@@ -59,12 +59,6 @@
     pass.addEventListener('input',function(){ err.classList.remove('on'); pass.classList.remove('bad'); });
     pass.addEventListener('keydown',function(e){ if(e.key==='Enter') submit.click(); });
 
-    /* Dummy credentials — one account per tab. Only these can sign in.
-       NOTE: this is a front-end check only (demo gate), not real security. */
-    var CREDS={
-      operator:{ email:'operator@incomera.com', pass:'Operator@123' },
-      team:    { email:'team@incomera.com',     pass:'Team@123' }
-    };
     function showErr(msg){
       err.textContent=msg; err.classList.add('on'); pass.classList.add('bad');
       submit.disabled=false; submit.textContent=ROLE[role].cta;
@@ -72,25 +66,37 @@
     email.addEventListener('input',function(){ err.classList.remove('on'); pass.classList.remove('bad'); });
     email.addEventListener('keydown',function(e){ if(e.key==='Enter') submit.click(); });
 
+    var API='http://localhost:5001'; /* change to your deployed backend URL later */
+
     submit.addEventListener('click',function(){
       var em=email.value.trim().toLowerCase(), pw=pass.value;
       if(!em||!pw){ showErr('Enter your email and password.'); return; }
       submit.disabled=true; submit.textContent='Signing in…';
-      setTimeout(function(){
-        var c=CREDS[role];
-        if(em!==c.email||pw!==c.pass){
+
+      fetch(API+'/api/auth/login',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({email:em,password:pw,role:role})
+      })
+      .then(function(r){ return r.json().then(function(d){ return {ok:r.ok,d:d}; }); })
+      .then(function(res){
+        if(!res.ok){
           pass.value='';
-          showErr('Invalid email or password. Try again.');
+          showErr(res.d.message||'Invalid email or password. Try again.');
           pass.focus();
           return;
         }
+        try{ sessionStorage.setItem('incomera_token',res.d.token); }catch(e){}
         submit.textContent='Success ✓';
         setTimeout(function(){
           submit.disabled=false; submit.textContent=ROLE[role].cta;
           close(); pass.value=''; email.value='';
           if(window.openAdminPortal) window.openAdminPortal(true);
         },600);
-      },700);
+      })
+      .catch(function(){
+        showErr('Cannot reach the server. Check that the backend is running.');
+      });
     });
     [].forEach.call(modal.querySelectorAll('[data-lclose]'),function(el){ el.addEventListener('click',close); });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&modal.classList.contains('open')) close(); });
